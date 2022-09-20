@@ -35,21 +35,38 @@ menu() {
 }
 
 searchmenu() {
-	ENTRY="$(
-			printf %b "
-				Close Menu
-			" |
-				xargs -0 echo |
-				sed '/^[[:space:]]*$/d' |
-				awk '{$1=$1};1' |
-				sxmo_dmenu_with_kb.sh -p "Search"
-	)" || exit 0
+	LIST=
+	URI=
+	while true; do
+		ENTRY="$(
+				printf %b "
+					Close Menu
+					Return
+					$(printf %s "$LIST" | awk -F "^" '{print $1}')
+				" |
+					xargs -0 echo |
+					sed '/^[[:space:]]*$/d' |
+					awk '{$1=$1};1' |
+					sxmo_dmenu_with_kb.sh -p "Search"
+		)" || exit 0
 
-	if [ "Close Menu" = "$ENTRY" ]; then
-		exit 0
-	else
-		echo "search" "$ENTRY" "$ARGS" "--format \"%t by %a\" --limit 30" | xargs spt
-	fi
+		case "$ENTRY" in
+			"Close Menu")
+				exit 0
+				;;
+			"Return")
+				return
+				;;
+		esac
+
+		URI=$(printf %s "$LIST" | grep "$ENTRY" | awk -F "^" '{print $2}')
+		if [ "$URI" != "" ]; then
+			echo "$URI"	
+		else
+			echo "$URI"
+			LIST=$(spt search "$ENTRY" "$ARGS" --format "%t by %a ^%u" --limit 10)			
+		fi
+	done
 }
 
 if [ -n "$1" ]; then
